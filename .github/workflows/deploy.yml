@@ -21,18 +21,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      - name: Setup Node (no cache)
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      - name: Install
+      - name: Install deps (no lockfile needed)
         run: npm install --no-fund --no-audit
 
-
-      - name: Build
-        run: npm run build
+      - name: Build with correct base
+        run: npm run build -- --base=/size-me/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
