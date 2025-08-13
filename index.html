@@ -4,15 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Size Me</title>
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React + ReactDOM (UMD) -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel for JSX (no build required) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   </head>
   <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
+
     <script type="text/babel" data-presets="react">
       const { useState, useMemo } = React;
+
+      // -------- Demo size charts (prototype only) --------
       const SIZE_CHARTS = {
         Nike: {
           Tops: {
@@ -26,24 +35,291 @@
               { label: "M", chest: [90, 97], waist: [74, 81], hips: [96, 103] },
               { label: "L", chest: [97, 104], waist: [81, 88], hips: [103, 110] }
             ]
+          },
+          Bottoms: {
+            Men: [
+              { label: "30", waist: [74, 78], hips: [89, 92], inseam: [76, 84] },
+              { label: "32", waist: [79, 83], hips: [93, 96], inseam: [76, 86] },
+              { label: "34", waist: [84, 88], hips: [97, 100], inseam: [76, 86] }
+            ],
+            Women: [
+              { label: "4-6", waist: [67, 74], hips: [90, 96], inseam: [74, 84] },
+              { label: "8-10", waist: [74, 81], hips: [96, 103], inseam: [74, 86] }
+            ]
+          }
+        },
+        Adidas: {
+          Tops: {
+            Men: [
+              { label: "S", chest: [88, 94], waist: [76, 82], hips: [88, 94] },
+              { label: "M", chest: [95, 102], waist: [83, 90], hips: [95, 102] },
+              { label: "L", chest: [103, 111], waist: [91, 99], hips: [103, 111] }
+            ],
+            Women: [
+              { label: "S", chest: [83, 88], waist: [67, 72], hips: [90, 95] },
+              { label: "M", chest: [89, 94], waist: [73, 78], hips: [96, 101] }
+            ]
+          },
+          Bottoms: {
+            Men: [
+              { label: "M (32)", waist: [81, 86], hips: [95, 101], inseam: [76, 86] },
+              { label: "L (34)", waist: [87, 93], hips: [102, 108], inseam: [76, 86] }
+            ],
+            Women: [
+              { label: "M (8-10)", waist: [73, 79], hips: [96, 102], inseam: [74, 86] }
+            ]
+          }
+        },
+        Uniqlo: {
+          Tops: {
+            Men: [
+              { label: "S", chest: [86, 92], waist: [74, 80], hips: [88, 94] },
+              { label: "M", chest: [92, 98], waist: [80, 86], hips: [94, 100] },
+              { label: "L", chest: [98, 104], waist: [86, 92], hips: [100, 106] }
+            ],
+            Women: [
+              { label: "S", chest: [80, 86], waist: [64, 70], hips: [88, 94] },
+              { label: "M", chest: [86, 92], waist: [70, 76], hips: [94, 100] }
+            ]
+          },
+          Bottoms: {
+            Men: [
+              { label: "30", waist: [74, 78], hips: [90, 94], inseam: [74, 86] },
+              { label: "32", waist: [79, 83], hips: [95, 99], inseam: [74, 86] }
+            ],
+            Women: [
+              { label: "25-26", waist: [61, 64], hips: [86, 90], inseam: [72, 82] },
+              { label: "27-28", waist: [65, 70], hips: [90, 95], inseam: [72, 84] }
+            ]
           }
         }
       };
+
+      const ALL_BRANDS = Object.keys(SIZE_CHARTS);
+      const CATEGORIES = ["Tops", "Bottoms"];
+      const GENDERS = ["Men", "Women"];
+
+      // -------- Helpers --------
+      const cmToIn = (cm) => cm / 2.54;
+      const inToCm = (inch) => inch * 2.54;
+      const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+      const within = ([lo, hi], v, pad = 0) => v >= lo - pad && v <= hi + pad;
+
+      function scoreSize(row, meas, category) {
+        const pad = 1.5; // cm tolerance
+        const keys = category === "Tops" ? ["chest", "waist", "hips"] : ["waist", "hips", "inseam"];
+        let score = 0, used = 0;
+        for (const k of keys) {
+          if (!row[k] || !meas[k]) continue;
+          used++;
+          if (within(row[k], meas[k], pad)) score += 2;
+          else if (meas[k] < row[k][0]) score += 1 - (row[k][0] - meas[k]) / 10;
+          else score += 1 - (meas[k] - row[k][1]) / 10;
+        }
+        return used ? score / used : -Infinity;
+      }
+
+      function pickSize(chart, meas, category) {
+        if (!Array.isArray(chart) || chart.length === 0) return null;
+        let best = null, bestScore = -Infinity;
+        for (const row of chart) {
+          const s = scoreSize(row, meas, category);
+          if (s > bestScore) { best = row; bestScore = s; }
+        }
+        return best;
+      }
+
+      function prettyRange([lo, hi], unit) {
+        const f = unit === "in" ? cmToIn : (x) => x;
+        const a = Math.round(f(lo) * 10) / 10;
+        const b = Math.round(f(hi) * 10) / 10;
+        return a + "–" + b + " " + unit;
+      }
+
+      // -------- App --------
       function App() {
-        const [count, setCount] = useState(0);
+        const [unit, setUnit] = useState("cm");
+        const [category, setCategory] = useState("Tops");
+        const [gender, setGender] = useState("Men");
+        const [brands, setBrands] = useState(ALL_BRANDS);
+        const [meas, setMeas] = useState({ chest: 100, waist: 84, hips: 100, inseam: 80, height: 178 });
+
+        const measCm = useMemo(() => {
+          if (unit === "cm") return meas;
+          return {
+            chest: inToCm(meas.chest || 0),
+            waist: inToCm(meas.waist || 0),
+            hips: inToCm(meas.hips || 0),
+            inseam: inToCm(meas.inseam || 0),
+            height: inToCm(meas.height || 0)
+          };
+        }, [meas, unit]);
+
+        const results = useMemo(() => {
+          const out = {};
+          for (const b of brands) {
+            const chart = SIZE_CHARTS[b] && SIZE_CHARTS[b][category] && SIZE_CHARTS[b][category][gender];
+            const pick = pickSize(chart, measCm, category);
+            if (pick) out[b] = pick;
+          }
+          return out;
+        }, [brands, category, gender, measCm]);
+
+        const unitLabel = unit === "cm" ? "cm" : "in";
+        function handleNumChange(key, valueStr) {
+          let v = parseFloat(valueStr);
+          if (Number.isNaN(v)) v = 0;
+          v = clamp(v, 0, 400);
+          setMeas((m) => ({ ...m, [key]: v }));
+        }
+
         return (
-          <div className="min-h-screen p-4">
-            <h1 className="text-2xl font-bold mb-4">Size Me</h1>
-            <p>Demo app running! Count: {count}</p>
-            <button
-              className="bg-slate-900 text-white px-4 py-2 rounded"
-              onClick={() => setCount(count + 1)}
-            >
-              Increment
-            </button>
+          <div className="min-h-screen">
+            <header className="sticky top-0 z-10 backdrop-blur bg-white/70 border-b">
+              <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-sm font-bold">S</div>
+                  <h1 className="text-2xl font-semibold">Size Me</h1>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="mr-1">Units</span>
+                  <div className="inline-flex rounded-xl border overflow-hidden">
+                    <button className={"px-3 py-1 " + (unit === "cm" ? "bg-slate-900 text-white" : "bg-white")} onClick={() => setUnit("cm")}>cm</button>
+                    <button className={"px-3 py-1 " + (unit === "in" ? "bg-slate-900 text-white" : "bg-white")} onClick={() => setUnit("in")}>in</button>
+                  </div>
+                </div>
+              </div>
+            </header>
+
+            <main className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <section className="bg-white rounded-2xl shadow p-5">
+                <h2 className="text-lg font-semibold mb-4">Your measurements</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    ["chest", "Chest"],
+                    ["waist", "Waist"],
+                    ["hips", "Hips"],
+                    ["inseam", "Inseam"],
+                    ["height", "Height"]
+                  ].map(([key, label]) => (
+                    <div key={key} className="flex flex-col">
+                      <label className="text-sm text-slate-600 mb-1">{label} ({unitLabel})</label>
+                      <input type="number" step="any" value={meas[key]} onChange={(e) => handleNumChange(key, e.target.value)} className="rounded-xl border px-3 py-2" />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm text-slate-600 mb-1">Category</label>
+                    <select className="w-full rounded-xl border px-3 py-2" value={category} onChange={(e) => setCategory(e.target.value)}>
+                      {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-slate-600 mb-1">Fit</label>
+                    <select className="w-full rounded-xl border px-3 py-2" value={gender} onChange={(e) => setGender(e.target.value)}>
+                      {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <label className="text-sm text-slate-600 mb-2 block">Brands</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {ALL_BRANDS.map((b) => {
+                      const checked = brands.includes(b);
+                      return (
+                        <label key={b} className={"flex items-center gap-2 rounded-xl border px-3 py-2 cursor-pointer " + (checked ? "bg-slate-900 text-white border-slate-900" : "bg-white")}>
+                          <input className="hidden" type="checkbox" checked={checked} onChange={(e) => {
+                            setBrands((prev) => e.target.checked ? Array.from(new Set(prev.concat([b]))) : prev.filter((x) => x !== b));
+                          }} />
+                          <span className="text-sm font-medium">{b}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <button className="rounded-xl bg-slate-900 text-white px-4 py-2 shadow">Calculate</button>
+                  <button className="rounded-xl border px-4 py-2" onClick={() => {
+                    const preset = unit === "cm" ? { chest: 100, waist: 84, hips: 100, inseam: 80, height: 178 } : { chest: 39.4, waist: 33.1, hips: 39.4, inseam: 31.5, height: 70.1 };
+                    setMeas(preset);
+                  }}>Use sample</button>
+                  <button className="rounded-xl border px-4 py-2" onClick={() => {
+                    const measOut = { ...meas, unit };
+                    const resOut = {};
+                    const measCmNow = unit === "cm" ? meas : { chest: inToCm(meas.chest || 0), waist: inToCm(meas.waist || 0), hips: inToCm(meas.hips || 0), inseam: inToCm(meas.inseam || 0), height: inToCm(meas.height || 0) };
+                    for (const b of brands) {
+                      const chart = SIZE_CHARTS[b] && SIZE_CHARTS[b][category] && SIZE_CHARTS[b][category][gender];
+                      const pick = pickSize(chart, measCmNow, category);
+                      if (pick) resOut[b] = pick;
+                    }
+                    const blob = new Blob([JSON.stringify({ input: { unit, category, gender, meas: measOut }, results: resOut }, null, 2)], { type: "application/json" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url; a.download = "size-me-results.json"; a.click();
+                    URL.revokeObjectURL(url);
+                  }}>Export results (JSON)</button>
+                </div>
+
+                <p className="mt-4 text-xs text-slate-500">Prototype only. Ranges are approximate and may vary by style or fabric. Check product pages before purchasing.</p>
+              </section>
+
+              <section className="bg-white rounded-2xl shadow p-5">
+                <h2 className="text-lg font-semibold mb-4">Recommended sizes</h2>
+                <ResultsPanel unit={unit} results={results} category={category} />
+              </section>
+            </main>
           </div>
         );
       }
+
+      function ResultsPanel({ unit, results, category }) {
+        const entries = Object.entries(results);
+        if (entries.length === 0) return <div className="text-slate-500">No brands selected.</div>;
+        return (
+          <ul className="space-y-3">
+            {entries.map(([brand, row]) => (
+              <li key={brand} className="rounded-xl border p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <div className="text-base font-medium">{brand}</div>
+                    <div className="text-sm text-slate-600">{category}</div>
+                  </div>
+                  <div className="text-2xl font-semibold">{row.label}</div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                  {category === "Tops" ? (
+                    <>
+                      {row.chest && <Metric label="Chest" value={prettyRange(row.chest, unit)} />}
+                      {row.waist && <Metric label="Waist" value={prettyRange(row.waist, unit)} />}
+                      {row.hips && <Metric label="Hips" value={prettyRange(row.hips, unit)} />}
+                    </>
+                  ) : (
+                    <>
+                      {row.waist && <Metric label="Waist" value={prettyRange(row.waist, unit)} />}
+                      {row.hips && <Metric label="Hips" value={prettyRange(row.hips, unit)} />}
+                      {row.inseam && <Metric label="Inseam" value={prettyRange(row.inseam, unit)} />}
+                    </>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        );
+      }
+
+      function Metric({ label, value }) {
+        return (
+          <div className="rounded-lg bg-slate-50 border p-2">
+            <div className="text-slate-500">{label}</div>
+            <div className="font-medium">{value}</div>
+          </div>
+        );
+      }
+
       const root = ReactDOM.createRoot(document.getElementById("root"));
       root.render(<App />);
     </script>
