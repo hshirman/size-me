@@ -12,41 +12,28 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
-    <!-- Babel for JSX (browser compile) -->
+    <!-- Babel for JSX in the browser -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   </head>
   <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
 
-    <!-- Your app code (JSX) -->
+    <!-- App (keep className strings on one line) -->
     <script type="text/babel" data-presets="react">
-      const { useState } = React;
+      const { useState, useMemo } = React;
 
-      function App() {
-        const [count, setCount] = useState(0);
-        return (
-          <div className="min-h-screen">
-            <header className="sticky top-0 z-10 backdrop-blur bg-white/70 border-b">
-              <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-sm font-bold">S</div>
-                <h1 className="text-2xl font-semibold">Size Me</h1>
-              </div>
-            </header>
-            <main className="max-w-6xl mx-auto px-4 py-6 space-y-4">
-              <p className="text-lg">Hello! If you can see this, React is working.</p>
-              <button
-                className="rounded-xl bg-slate-900 text-white px-4 py-2"
-                onClick={() => setCount(c => c + 1)}
-              >
-                Clicks: {count}
-              </button>
-            </main>
-          </div>
-        );
-      }
-
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      root.render(<App />);
-    </script>
-  </body>
-</html>
+      // Demo data (prototype only — replace with real brand charts later)
+      const SIZE_CHARTS = {
+        Nike: {
+          Tops: {
+            Men: [
+              { label: "S", chest: [86, 94], waist: [73, 81], hips: [86, 94] },
+              { label: "M", chest: [94, 102], waist: [81, 89], hips: [94, 102] },
+              { label: "L", chest: [102, 110], waist: [89, 97], hips: [102, 110] }
+            ],
+            Women: [
+              { label: "S", chest: [83, 90], waist: [67, 74], hips: [90, 96] },
+              { label: "M", chest: [90, 97], waist: [74, 81], hips: [96, 103] },
+              { label: "L", chest: [97, 104], waist: [81, 88], hips: [103, 110] }
+            ]
+          },
