@@ -28,7 +28,8 @@ jobs:
           cache: npm
 
       - name: Install
-        run: npm install
+        run: npm install --no-fund --no-audit
+
 
       - name: Build
         run: npm run build
