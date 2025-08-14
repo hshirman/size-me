@@ -8,6 +8,16 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      .pulse {
+        animation: pulseAnim 0.5s ease;
+      }
+      @keyframes pulseAnim {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.08); }
+        100% { transform: scale(1); }
+      }
+    </style>
   </head>
   <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
@@ -15,6 +25,7 @@
     <script type="text/babel" data-presets="react">
       const { useState, useMemo } = React;
 
+      // --- Size Chart Data ---
       const SIZE_CHARTS = {
         Nike:{Tops:{Men:[
           {label:"S", chest:[86,94], waist:[73,81], hips:[86,94]},
@@ -106,6 +117,9 @@
         const [gender, setGender] = useState('Men');
         const [brands, setBrands] = useState(ALL_BRANDS);
         const [meas, setMeas] = useState({ chest:100, waist:84, hips:100, inseam:80, height:178 });
+        const [calcTick, setCalcTick] = useState(0);
+        const [showToast, setShowToast] = useState(false);
+        const [btnPulse, setBtnPulse] = useState(false);
 
         const measCm = useMemo(()=> unit==='cm' ? meas : ({
           chest: inToCm(meas.chest||0),
@@ -123,7 +137,7 @@
             if(pick) out[b]=pick;
           }
           return out;
-        }, [brands, category, gender, measCm]);
+        }, [brands, category, gender, measCm, calcTick]);
 
         const unitLabel = unit==='cm' ? 'cm' : 'in';
         function handleNumChange(k,val){
@@ -200,7 +214,19 @@
                 </div>
 
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <button className="rounded-xl bg-slate-900 text-white px-4 py-2 shadow">Calculate</button>
+                  <button
+                    className={`rounded-xl bg-slate-900 text-white px-4 py-2 shadow ${btnPulse ? 'pulse' : ''}`}
+                    onClick={() => {
+                      setCalcTick(t => t + 1);
+                      setShowToast(true);
+                      setBtnPulse(true);
+                      setTimeout(() => setShowToast(false), 1500);
+                      setTimeout(() => setBtnPulse(false), 500);
+                      document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
+                  >
+                    Calculate
+                  </button>
                   <button className="rounded-xl border px-4 py-2" onClick={()=>{
                     const preset = unit==='cm'
                       ? { chest:100, waist:84, hips:100, inseam:80, height:178 }
@@ -229,11 +255,17 @@
                 <p className="mt-4 text-xs text-slate-500">Prototype only. Ranges are approximate and may vary by style or fabric. Check product pages before purchasing.</p>
               </section>
 
-              <section className="bg-white rounded-2xl shadow p-5">
+              <section id="results" className="bg-white rounded-2xl shadow p-5">
                 <h2 className="text-lg font-semibold mb-4">Recommended sizes</h2>
                 <ResultsPanel unit={unit} results={results} category={category} />
               </section>
             </main>
+
+            {showToast && (
+              <div className="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity duration-300">
+                Calculated ✓
+              </div>
+            )}
           </div>
         );
       }
