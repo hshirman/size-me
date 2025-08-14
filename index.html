@@ -16,351 +16,332 @@
   <body class="bg-slate-50 text-slate-900">
     <div id="root"></div>
 
-    <!-- App -->
     <script type="text/babel" data-presets="react">
-      const { useState, useMemo } = React;
+      const { useState, useMemo, useEffect } = React;
 
-      /* ---------------- Demo size charts (prototype only) ---------------- */
+      /* ====================== Data ====================== */
       const SIZE_CHARTS = {
-  Nike: {
-    Tops: {
-      Men: [
-        { label: "XS", chest: [81, 86], waist: [66, 73], hips: [80, 86] },
-        { label: "S",  chest: [86, 94], waist: [73, 81], hips: [86, 94] },
-        { label: "M",  chest: [94,102], waist: [81, 89], hips: [94,102] },
-        { label: "L",  chest: [102,110], waist: [89, 97], hips: [102,110] },
-        { label: "XL", chest: [110,118], waist: [97,109], hips: [110,118] },
-        { label: "XXL",chest: [118,126], waist: [109,121], hips: [118,126] }
-      ],
-      Women: [
-        { label: "XS", chest: [76, 83], waist: [60, 67], hips: [84, 90] },
-        { label: "S",  chest: [83, 90], waist: [67, 74], hips: [90, 96] },
-        { label: "M",  chest: [90, 97], waist: [74, 81], hips: [96,103] },
-        { label: "L",  chest: [97,104], waist: [81, 88], hips: [103,110] },
-        { label: "XL", chest: [104,114], waist: [88, 98], hips: [110,120] },
-        { label: "XXL",chest: [114,124], waist: [98,108], hips: [120,130] }
-      ]
-    },
-    Bottoms: {
-      Men: [
-        { label: "28", waist: [71, 73],  hips: [86, 88],  inseam: [76, 86] },
-        { label: "30", waist: [74, 78],  hips: [89, 92],  inseam: [76, 86] },
-        { label: "32", waist: [79, 83],  hips: [93, 96],  inseam: [76, 86] },
-        { label: "34", waist: [84, 88],  hips: [97,100],  inseam: [76, 86] },
-        { label: "36", waist: [89, 93],  hips: [101,104], inseam: [76, 86] },
-        { label: "38", waist: [94, 99],  hips: [105,108], inseam: [76, 86] },
-        { label: "40", waist: [100,105], hips: [109,113], inseam: [76, 86] }
-      ],
-      Women: [
-        { label: "2",  waist: [60, 64], hips: [84, 88],  inseam: [72, 84] },
-        { label: "4",  waist: [64, 67], hips: [88, 90],  inseam: [72, 84] },
-        { label: "6",  waist: [67, 74], hips: [90, 96],  inseam: [74, 84] },
-        { label: "8",  waist: [74, 78], hips: [96, 99],  inseam: [74, 86] },
-        { label: "10", waist: [78, 81], hips: [99,103],  inseam: [74, 86] },
-        { label: "12", waist: [81, 86], hips: [103,108], inseam: [74, 86] },
-        { label: "14", waist: [86, 91], hips: [108,113], inseam: [74, 86] }
-      ]
-    }
-  },
+        Nike: {
+          Tops: {
+            Men: [
+              { label: "XS", chest: [81, 86], waist: [66, 73], hips: [80, 86] },
+              { label: "S",  chest: [86, 94], waist: [73, 81], hips: [86, 94] },
+              { label: "M",  chest: [94,102], waist: [81, 89], hips: [94,102] },
+              { label: "L",  chest: [102,110], waist: [89, 97], hips: [102,110] },
+              { label: "XL", chest: [110,118], waist: [97,109], hips: [110,118] },
+              { label: "XXL",chest: [118,126], waist: [109,121], hips: [118,126] }
+            ],
+            Women: [
+              { label: "XS", chest: [76, 83], waist: [60, 67], hips: [84, 90] },
+              { label: "S",  chest: [83, 90], waist: [67, 74], hips: [90, 96] },
+              { label: "M",  chest: [90, 97], waist: [74, 81], hips: [96,103] },
+              { label: "L",  chest: [97,104], waist: [81, 88], hips: [103,110] },
+              { label: "XL", chest: [104,114], waist: [88, 98], hips: [110,120] },
+              { label: "XXL",chest: [114,124], waist: [98,108], hips: [120,130] }
+            ]
+          },
+          Bottoms: {
+            Men: [
+              { label: "28", waist: [71, 73],  hips: [86, 88],  inseam: [76, 86] },
+              { label: "30", waist: [74, 78],  hips: [89, 92],  inseam: [76, 86] },
+              { label: "32", waist: [79, 83],  hips: [93, 96],  inseam: [76, 86] },
+              { label: "34", waist: [84, 88],  hips: [97,100],  inseam: [76, 86] },
+              { label: "36", waist: [89, 93],  hips: [101,104], inseam: [76, 86] },
+              { label: "38", waist: [94, 99],  hips: [105,108], inseam: [76, 86] },
+              { label: "40", waist: [100,105], hips: [109,113], inseam: [76, 86] }
+            ],
+            Women: [
+              { label: "2",  waist: [60, 64], hips: [84, 88],  inseam: [72, 84] },
+              { label: "4",  waist: [64, 67], hips: [88, 90],  inseam: [72, 84] },
+              { label: "6",  waist: [67, 74], hips: [90, 96],  inseam: [74, 84] },
+              { label: "8",  waist: [74, 78], hips: [96, 99],  inseam: [74, 86] },
+              { label: "10", waist: [78, 81], hips: [99,103],  inseam: [74, 86] },
+              { label: "12", waist: [81, 86], hips: [103,108], inseam: [74, 86] },
+              { label: "14", waist: [86, 91], hips: [108,113], inseam: [74, 86] }
+            ]
+          }
+        },
+        Adidas: {
+          Tops: {
+            Men: [
+              { label: "XS", chest: [82, 87],  waist: [70, 75],  hips: [82, 87] },
+              { label: "S",  chest: [88, 94],  waist: [76, 82],  hips: [88, 94] },
+              { label: "M",  chest: [95, 102], waist: [83, 90],  hips: [95, 102] },
+              { label: "L",  chest: [103,111], waist: [91, 99],  hips: [103,111] },
+              { label: "XL", chest: [112,121], waist: [100,109], hips: [112,121] },
+              { label: "XXL",chest: [122,131], waist: [110,119], hips: [122,131] }
+            ],
+            Women: [
+              { label: "XS", chest: [77, 82],  waist: [60, 65],  hips: [84, 89] },
+              { label: "S",  chest: [83, 88],  waist: [66, 72],  hips: [90, 95] },
+              { label: "M",  chest: [89, 94],  waist: [73, 78],  hips: [96,101] },
+              { label: "L",  chest: [95, 103], waist: [79, 86],  hips: [102,110] },
+              { label: "XL", chest: [104,113], waist: [87, 96],  hips: [111,119] }
+            ]
+          },
+          Bottoms: {
+            Men: [
+              { label: "28", waist: [71, 74],  hips: [87, 92],  inseam: [76, 86] },
+              { label: "30", waist: [75, 80],  hips: [93, 98],  inseam: [76, 86] },
+              { label: "32", waist: [81, 86],  hips: [99, 104], inseam: [76, 86] },
+              { label: "34", waist: [87, 93],  hips: [105,110], inseam: [76, 86] },
+              { label: "36", waist: [94, 100], hips: [111,116], inseam: [76, 86] },
+              { label: "38", waist: [101,106], hips: [117,122], inseam: [76, 86] }
+            ],
+            Women: [
+              { label: "2-4",  waist: [61, 67], hips: [86, 94],  inseam: [72, 84] },
+              { label: "6-8",  waist: [68, 74], hips: [95, 102], inseam: [72, 86] },
+              { label: "10-12",waist: [75, 82], hips: [103,110], inseam: [74, 86] },
+              { label: "14-16",waist: [83, 91], hips: [111,118], inseam: [74, 86] }
+            ]
+          }
+        },
+        Uniqlo: {
+          Tops: {
+            Men: [
+              { label: "XS", chest: [82, 88],  waist: [70, 76],  hips: [84, 90] },
+              { label: "S",  chest: [86, 92],  waist: [74, 80],  hips: [88, 94] },
+              { label: "M",  chest: [92, 98],  waist: [80, 86],  hips: [94,100] },
+              { label: "L",  chest: [98,104],  waist: [86, 92],  hips: [100,106] },
+              { label: "XL", chest: [104,110], waist: [92, 98],  hips: [106,112] },
+              { label: "XXL",chest: [110,116], waist: [98,104], hips: [112,118] }
+            ],
+            Women: [
+              { label: "XS", chest: [76, 82],  waist: [60, 66],  hips: [84, 90] },
+              { label: "S",  chest: [80, 86],  waist: [64, 70],  hips: [88, 94] },
+              { label: "M",  chest: [86, 92],  waist: [70, 76],  hips: [94,100] },
+              { label: "L",  chest: [92, 98],  waist: [76, 82],  hips: [100,106] },
+              { label: "XL", chest: [98,104],  waist: [82, 88],  hips: [106,112] }
+            ]
+          },
+          Bottoms: {
+            Men: [
+              { label: "28", waist: [71, 74],  hips: [88, 92],  inseam: [74, 86] },
+              { label: "30", waist: [74, 78],  hips: [90, 94],  inseam: [74, 86] },
+              { label: "32", waist: [79, 83],  hips: [95, 99],  inseam: [74, 86] },
+              { label: "34", waist: [84, 88],  hips: [100,104], inseam: [74, 86] },
+              { label: "36", waist: [89, 93],  hips: [105,109], inseam: [74, 86] }
+            ],
+            Women: [
+              { label: "24-25", waist: [58, 62],  hips: [84, 88],  inseam: [72, 82] },
+              { label: "26-27", waist: [63, 66],  hips: [88, 92],  inseam: [72, 84] },
+              { label: "28-29", waist: [67, 70],  hips: [92, 96],  inseam: [72, 84] },
+              { label: "30-31", waist: [71, 76],  hips: [96, 101], inseam: [73, 85] },
+              { label: "32-33", waist: [77, 82],  hips: [101,106], inseam: [73, 85] }
+            ]
+          }
+        }
+      };
 
-  Adidas: {
-    Tops: {
-      Men: [
-        { label: "XS", chest: [82, 87],  waist: [70, 75],  hips: [82, 87] },
-        { label: "S",  chest: [88, 94],  waist: [76, 82],  hips: [88, 94] },
-        { label: "M",  chest: [95, 102], waist: [83, 90],  hips: [95, 102] },
-        { label: "L",  chest: [103,111], waist: [91, 99],  hips: [103,111] },
-        { label: "XL", chest: [112,121], waist: [100,109], hips: [112,121] },
-        { label: "XXL",chest: [122,131], waist: [110,119], hips: [122,131] }
-      ],
-      Women: [
-        { label: "XS", chest: [77, 82],  waist: [60, 65],  hips: [84, 89] },
-        { label: "S",  chest: [83, 88],  waist: [66, 72],  hips: [90, 95] },
-        { label: "M",  chest: [89, 94],  waist: [73, 78],  hips: [96,101] },
-        { label: "L",  chest: [95, 103], waist: [79, 86],  hips: [102,110] },
-        { label: "XL", chest: [104,113], waist: [87, 96],  hips: [111,119] }
-      ]
-    },
-    Bottoms: {
-      Men: [
-        { label: "28", waist: [71, 74],  hips: [87, 92],  inseam: [76, 86] },
-        { label: "30", waist: [75, 80],  hips: [93, 98],  inseam: [76, 86] },
-        { label: "32", waist: [81, 86],  hips: [99, 104], inseam: [76, 86] },
-        { label: "34", waist: [87, 93],  hips: [105,110], inseam: [76, 86] },
-        { label: "36", waist: [94, 100], hips: [111,116], inseam: [76, 86] },
-        { label: "38", waist: [101,106], hips: [117,122], inseam: [76, 86] }
-      ],
-      Women: [
-        { label: "2-4",  waist: [61, 67], hips: [86, 94],  inseam: [72, 84] },
-        { label: "6-8",  waist: [68, 74], hips: [95, 102], inseam: [72, 86] },
-        { label: "10-12",waist: [75, 82], hips: [103,110], inseam: [74, 86] },
-        { label: "14-16",waist: [83, 91], hips: [111,118], inseam: [74, 86] }
-      ]
-    }
-  },
-
-  Uniqlo: {
-    Tops: {
-      Men: [
-        { label: "XS", chest: [82, 88],  waist: [70, 76],  hips: [84, 90] },
-        { label: "S",  chest: [86, 92],  waist: [74, 80],  hips: [88, 94] },
-        { label: "M",  chest: [92, 98],  waist: [80, 86],  hips: [94,100] },
-        { label: "L",  chest: [98,104],  waist: [86, 92],  hips: [100,106] },
-        { label: "XL", chest: [104,110], waist: [92, 98],  hips: [106,112] },
-        { label: "XXL",chest: [110,116], waist: [98,104], hips: [112,118] }
-      ],
-      Women: [
-        { label: "XS", chest: [76, 82],  waist: [60, 66],  hips: [84, 90] },
-        { label: "S",  chest: [80, 86],  waist: [64, 70],  hips: [88, 94] },
-        { label: "M",  chest: [86, 92],  waist: [70, 76],  hips: [94,100] },
-        { label: "L",  chest: [92, 98],  waist: [76, 82],  hips: [100,106] },
-        { label: "XL", chest: [98,104],  waist: [82, 88],  hips: [106,112] }
-      ]
-    },
-    Bottoms: {
-      Men: [
-        { label: "28", waist: [71, 74],  hips: [88, 92],  inseam: [74, 86] },
-        { label: "30", waist: [74, 78],  hips: [90, 94],  inseam: [74, 86] },
-        { label: "32", waist: [79, 83],  hips: [95, 99],  inseam: [74, 86] },
-        { label: "34", waist: [84, 88],  hips: [100,104], inseam: [74, 86] },
-        { label: "36", waist: [89, 93],  hips: [105,109], inseam: [74, 86] }
-      ],
-      Women: [
-        { label: "24-25", waist: [58, 62],  hips: [84, 88],  inseam: [72, 82] },
-        { label: "26-27", waist: [63, 66],  hips: [88, 92],  inseam: [72, 84] },
-        { label: "28-29", waist: [67, 70],  hips: [92, 96],  inseam: [72, 84] },
-        { label: "30-31", waist: [71, 76],  hips: [96, 101], inseam: [73, 85] },
-        { label: "32-33", waist: [77, 82],  hips: [101,106], inseam: [73, 85] }
-      ]
-    }
-  }
-};
-
-
-      const ALL_BRANDS = Object.keys(SIZE_CHARTS);
-      const CATEGORIES = ["Tops","Bottoms"];
-      const GENDERS = ["Men","Women"];
-
-      /* ---------------- Helpers ---------------- */
+      /* ====================== Helpers ====================== */
       const cmToIn = (cm)=> cm/2.54;
       const inToCm = (inch)=> inch*2.54;
       const clamp = (n,a,b)=> Math.max(a,Math.min(b,n));
-      const within = ([lo,hi],v,pad=0)=> v>=lo-pad && v<=hi+pad;
+      function prettyRange([lo,hi], unit){ const f = unit==='in' ? cmToIn : (x)=>x; const a = Math.round(f(lo)*10)/10, b = Math.round(f(hi)*10)/10; return a + "–" + b + " " + unit; }
 
       // distance outside a range (in cm). 0 = in-range (w/ tolerance)
-      function distToRange([lo, hi], v, pad=0) {
-        const L = lo - pad, H = hi + pad;
-        if (v < L) return L - v;
-        if (v > H) return v - H;
-        return 0;
-      }
+      function distToRange([lo, hi], v, pad=0){ const L=lo-pad, H=hi+pad; if(v<L) return L-v; if(v>H) return v-H; return 0; }
 
-      // NEW: rule-based picker that never returns a size that's too small when strict is on
-      function pickByRules(chart, measCm, category, padCm, strict){
+      // Fit preference adjustments
+      function fitAdjustments(fit){ if(fit==="Slim") return { tolBump:-0.5, sizeUpBias:0 }; if(fit==="Relaxed") return { tolBump:+0.5, sizeUpBias:1 }; return { tolBump:0, sizeUpBias:0.5 }; }
+
+      // Rule-based picker
+      function pickByRules(chart, measCm, category, padCm, strict, fit){
         if(!Array.isArray(chart) || chart.length===0) return null;
         const keys = category==='Tops' ? ['chest','waist','hips'] : ['waist','hips','inseam'];
+        const { tolBump, sizeUpBias } = fitAdjustments(fit);
+        const tol = Math.max(0, padCm + tolBump);
 
-        // A) Strict in-range first
+        // A) strict in-range first
         if (strict) {
           for (const row of chart) {
-            const ok = keys.every(k => !row[k] || distToRange(row[k], (measCm[k]||0), padCm) === 0);
+            const ok = keys.every(k => !row[k] || distToRange(row[k], (measCm[k]||0), tol) === 0);
             if (ok) return { row, reason: 'strict_in_range' };
           }
         }
-        // B) Otherwise: smallest size that isn't too small
-        for (const row of chart) {
-          const notTooSmall = keys.every(k => !row[k] || (measCm[k]==null ? true : (measCm[k] <= row[k][1] + padCm)));
-          if (notTooSmall) return { row, reason: 'sized_up_to_fit' };
+        // B) smallest size that isn't too small; bias up if very near top and fit prefers room
+        for (let i=0;i<chart.length;i++){
+          const row = chart[i];
+          const notTooSmall = keys.every(k => !row[k] || (measCm[k]==null ? true : (measCm[k] <= row[k][1] + tol)));
+          if (notTooSmall) {
+            const nearTop = keys.some(k => row[k] && measCm[k]!=null && (row[k][1] - measCm[k]) <= (1 - sizeUpBias));
+            if (nearTop && i+1 < chart.length && sizeUpBias >= 0.5) return { row: chart[i+1], reason: 'sized_up_by_fit' };
+            return { row, reason: 'sized_up_to_fit' };
+          }
         }
-        // C) If even largest is too small, pick largest and flag
+        // C) over the largest
         return { row: chart[chart.length - 1], reason: 'over_max' };
       }
 
-      function prettyRange([lo,hi], unit){
-        const f = unit==='in' ? cmToIn : (x)=>x;
-        const a = Math.round(f(lo)*10)/10, b = Math.round(f(hi)*10)/10;
-        return a + "–" + b + " " + unit;
-      }
-      function prettyDelta(deltaCm, unit){
-        const v = unit==='in' ? cmToIn(deltaCm) : deltaCm;
-        const n = Math.round(v*10)/10;
-        return n===0 ? "in range" : (n>0 ? ("+"+n) : n) + " " + unit;
+      function betweenSizes(chart, chosenRow, measCm, category, tol){
+        const keys = category==='Tops' ? ['chest','waist','hips'] : ['waist','hips','inseam'];
+        const idx = chart.findIndex(r => r.label === chosenRow.label);
+        if (idx < 0 || idx === chart.length-1) return null;
+        const next = chart[idx+1];
+        const nearTop = keys.some(k => chosenRow[k] && measCm[k]!=null && (chosenRow[k][1] - measCm[k]) <= 1 + tol);
+        const nearBottom = keys.some(k => next[k] && measCm[k]!=null && (measCm[k] - next[k][0]) <= 1 + tol);
+        return (nearTop || nearBottom) ? next.label : null;
       }
 
-      /* ---------------- App ---------------- */
+      // Persistence + share
+      const STORAGE_KEY = "sizeme:v1";
+      function saveState(s){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); }catch{} }
+      function loadState(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||"null"); }catch{ return null; } }
+      function encodeState(obj){ const json = JSON.stringify(obj); return btoa(unescape(encodeURIComponent(json))); }
+      function decodeState(str){ try{ return JSON.parse(decodeURIComponent(escape(atob(str)))); }catch{ return null; } }
+
+      /* ====================== UI ====================== */
       function App(){
         const [unit, setUnit] = useState('cm');
         const [category, setCategory] = useState('Tops');
         const [gender, setGender] = useState('Men');
-        const [brands, setBrands] = useState(ALL_BRANDS);
+        const [brands, setBrands] = useState(Object.keys(SIZE_CHARTS));
         const [meas, setMeas] = useState({ chest:100, waist:84, hips:100, inseam:80, height:178 });
-        const [tolerance, setTolerance] = useState(1.5); // cm wiggle room
-        const [strict, setStrict] = useState(true);      // default ON per your feedback
+        const [tolerance, setTolerance] = useState(1.5);
+        const [strict, setStrict] = useState(true);
+        const [fit, setFit] = useState("Regular");
         const [calcTick, setCalcTick] = useState(0);
         const [showToast, setShowToast] = useState(false);
         const [btnPulse, setBtnPulse] = useState(false);
+        const [dark, setDark] = useState(false);
+        const [hydrated, setHydrated] = useState(false);
+
+        // Hydrate from URL (share) once
+        useEffect(()=>{ const q=new URLSearchParams(location.search); const packed=q.get("s"); if(!packed) return; const st=decodeState(packed); if(!st) return;
+          if(st.meas) setMeas(st.meas); if(st.unit) setUnit(st.unit); if(st.category) setCategory(st.category); if(st.gender) setGender(st.gender);
+          if(st.tolerance!=null) setTolerance(st.tolerance); if(st.strict!=null) setStrict(st.strict); if(st.brands) setBrands(st.brands); if(st.fit) setFit(st.fit);
+        },[]);
+
+        // Hydrate from storage once (after URL so URL wins)
+        useEffect(()=>{ if(hydrated) return; const saved=loadState(); if(saved){ if(saved.meas) setMeas(saved.meas); if(saved.unit) setUnit(saved.unit); if(saved.category) setCategory(saved.category);
+          if(saved.gender) setGender(saved.gender); if(saved.tolerance!=null) setTolerance(saved.tolerance); if(saved.strict!=null) setStrict(saved.strict); if(saved.brands) setBrands(saved.brands);
+          if(saved.fit) setFit(saved.fit); if(saved.dark!=null) setDark(saved.dark);
+        } setHydrated(true); },[hydrated]);
+
+        // Save on change
+        useEffect(()=>{ if(!hydrated) return; saveState({ meas, unit, category, gender, tolerance, strict, brands, fit, dark }); },[hydrated, meas, unit, category, gender, tolerance, strict, brands, fit, dark]);
 
         const measCm = useMemo(()=> unit==='cm' ? meas : ({
-          chest: inToCm(meas.chest||0),
-          waist: inToCm(meas.waist||0),
-          hips: inToCm(meas.hips||0),
-          inseam: inToCm(meas.inseam||0),
-          height: inToCm(meas.height||0),
+          chest: inToCm(meas.chest||0), waist: inToCm(meas.waist||0), hips: inToCm(meas.hips||0), inseam: inToCm(meas.inseam||0), height: inToCm(meas.height||0),
         }), [meas, unit]);
 
-        // Build results + diagnostics
         const results = useMemo(()=>{
-          const out = {};
+          const out={};
           for(const b of brands){
             const chart = SIZE_CHARTS[b] && SIZE_CHARTS[b][category] && SIZE_CHARTS[b][category][gender];
             if(!chart) continue;
-
-            const chosen = pickByRules(chart, measCm, category, tolerance, strict);
-            if (!chosen) continue;
-
-            const row = chosen.row;
-            const reason = chosen.reason;
-
-            const keys = category==='Tops' ? ['chest','waist','hips'] : ['waist','hips','inseam'];
-            const diag = {};
-            for (const k of keys) {
-              if(!row[k] || !measCm[k]) continue;
-              diag[k] = distToRange(row[k], measCm[k], tolerance); // 0 => in-range
-            }
-            out[b] = { pick: row, diag, reason };
+            const chosen = pickByRules(chart, measCm, category, tolerance, strict, fit);
+            if(!chosen) continue;
+            const row = chosen.row, reason = chosen.reason;
+            const tolForBetween = Math.max(0, tolerance + fitAdjustments(fit).tolBump);
+            const maybeNext = betweenSizes(chart, row, measCm, category, tolForBetween);
+            out[b] = { pick: row, reason, between: maybeNext, chart }; // keep chart for ResultsPanel hint
           }
           return out;
-        }, [brands, category, gender, measCm, tolerance, strict, calcTick]);
+        }, [brands, category, gender, measCm, tolerance, strict, fit, calcTick]);
 
         const unitLabel = unit==='cm' ? 'cm' : 'in';
-        function handleNumChange(k,val){
-          let v=parseFloat(val); if(Number.isNaN(v)) v=0; v=clamp(v,0,400);
-          setMeas(m=>({...m,[k]:v}));
-        }
+        function handleNumChange(k,val){ let v=parseFloat(val); if(Number.isNaN(v)) v=0; v=clamp(v,0,400); setMeas(m=>({...m,[k]:v})); }
 
         return (
-          <div className="min-h-screen">
-            <header className="sticky top-0 z-10 backdrop-blur bg-white/70 border-b">
-              <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-slate-300 flex items-center justify-center text-sm font-bold">S</div>
-                  <h1 className="text-2xl font-semibold">Size Me</h1>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="mr-1">Units</span>
-                  <div className="inline-flex rounded-xl border overflow-hidden">
-                    <button className={"px-3 py-1 " + (unit==='cm'?'bg-slate-900 text-white':'bg-white')} onClick={()=>setUnit('cm')}>cm</button>
-                    <button className={"px-3 py-1 " + (unit==='in'?'bg-slate-900 text-white':'bg-white')} onClick={()=>setUnit('in')}>in</button>
+          <div className={dark ? "dark" : ""}>
+            <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100">
+              <header className="sticky top-0 z-10 backdrop-blur bg-white/70 dark:bg-slate-800/70 border-b border-slate-200 dark:border-slate-700">
+                <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center text-sm font-bold">S</div>
+                    <h1 className="text-2xl font-semibold">Size Me</h1>
                   </div>
-                </div>
-              </div>
-            </header>
-
-            <main className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <section className="bg-white rounded-2xl shadow p-5">
-                <h2 className="text-lg font-semibold mb-4">Your measurements</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    ['chest','Chest'],
-                    ['waist','Waist'],
-                    ['hips','Hips'],
-                    ['inseam','Inseam'],
-                    ['height','Height'],
-                  ].map(([key,label])=>(
-                    <div key={key} className="flex flex-col">
-                      <label className="text-sm text-slate-600 mb-1">{label} ({unitLabel})</label>
-                      <input type="number" step="any" value={meas[key]} onChange={(e)=>handleNumChange(key, e.target.value)} className="rounded-xl border px-3 py-2" />
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="mr-1">Units</span>
+                    <div className="inline-flex rounded-xl border overflow-hidden border-slate-300 dark:border-slate-600">
+                      <button className={"px-3 py-1 " + (unit==='cm'?'bg-slate-900 text-white':'bg-white dark:bg-slate-700 dark:text-slate-100')} onClick={()=>setUnit('cm')}>cm</button>
+                      <button className={"px-3 py-1 " + (unit==='in'?'bg-slate-900 text-white':'bg-white dark:bg-slate-700 dark:text-slate-100')} onClick={()=>setUnit('in')}>in</button>
                     </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 grid grid-cols-2 gap-4 items-end">
-                  <div>
-                    <label className="text-sm text-slate-600 mb-1">Category</label>
-                    <select className="w-full rounded-xl border px-3 py-2" value={category} onChange={(e)=>setCategory(e.target.value)}>
-                      {CATEGORIES.map(c=><option key={c} value={c}>{c}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm text-slate-600 mb-1">Fit</label>
-                    <select className="w-full rounded-xl border px-3 py-2" value={gender} onChange={(e)=>setGender(e.target.value)}>
-                      {GENDERS.map(g=><option key={g} value={g}>{g}</option>)}
-                    </select>
+                    <button className="ml-3 rounded-xl border px-3 py-1 text-sm border-slate-300 dark:border-slate-600" onClick={()=>setDark(d=>!d)}>{dark ? "Light" : "Dark"}</button>
                   </div>
                 </div>
+              </header>
 
-                <div className="mt-6 grid grid-cols-2 gap-4 items-end">
-                  <div>
-                    <label className="text-sm text-slate-600 mb-1">Tolerance (cm)</label>
-                    <input type="number" min="0" max="5" step="0.5" value={tolerance} onChange={(e)=>setTolerance(clamp(parseFloat(e.target.value)||0,0,5))} className="rounded-xl border px-3 py-2 w-28" />
+              <main className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <section className="bg-white dark:bg-slate-800 rounded-2xl shadow p-5">
+                  <h2 className="text-lg font-semibold mb-4">Your measurements</h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    {[
+                      ['chest','Chest'], ['waist','Waist'], ['hips','Hips'], ['inseam','Inseam'], ['height','Height'],
+                    ].map(([key,label])=>(
+                      <div key={key} className="flex flex-col">
+                        <label className="text-sm text-slate-600 dark:text-slate-300 mb-1">{label} ({unitLabel})</label>
+                        <input type="number" step="any" value={meas[key]} onChange={(e)=>handleNumChange(key, e.target.value)} className="rounded-xl border px-3 py-2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" />
+                      </div>
+                    ))}
                   </div>
-                  <label className="inline-flex items-center gap-2">
-                    <input type="checkbox" checked={strict} onChange={(e)=>setStrict(e.target.checked)} />
-                    <span className="text-sm text-slate-700">Strict match (never pick too small)</span>
-                  </label>
-                </div>
 
-                <div className="mt-6">
-                  <label className="text-sm text-slate-600 mb-2 block">Brands</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {ALL_BRANDS.map(b=>{
-                      const checked = brands.includes(b);
-                      return (
-                        <label key={b} className={"flex items-center gap-2 rounded-xl border px-3 py-2 cursor-pointer " + (checked ? "bg-slate-900 text-white border-slate-900" : "bg-white")}>
-                          <input className="hidden" type="checkbox" checked={checked} onChange={(e)=>{
-                            setBrands(prev => e.target.checked ? Array.from(new Set(prev.concat([b]))) : prev.filter(x=>x!==b));
-                          }} />
-                          <span className="text-sm font-medium">{b}</span>
-                        </label>
-                      );
-                    })}
+                  <div className="mt-6 grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-slate-600 dark:text-slate-300 mb-1">Category</label>
+                      <select className="w-full rounded-xl border px-3 py-2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" value={category} onChange={(e)=>setCategory(e.target.value)}>
+                        {["Tops","Bottoms"].map(c=><option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm text-slate-600 dark:text-slate-300 mb-1">Fit</label>
+                      <select className="w-full rounded-xl border px-3 py-2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" value={gender} onChange={(e)=>setGender(e.target.value)}>
+                        {["Men","Women"].map(g=><option key={g} value={g}>{g}</option>)}
+                      </select>
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-6 flex flex-wrap gap-3">
-                  <button
-                    className={"rounded-xl bg-slate-900 text-white px-4 py-2 shadow" + (btnPulse ? " pulse" : "")}
-                    onClick={() => {
-                      setCalcTick(t => t + 1);
-                      setShowToast(true);
-                      setBtnPulse(true);
-                      setTimeout(() => setShowToast(false), 1500);
-                      setTimeout(() => setBtnPulse(false), 500);
-                      document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
-                  >Calculate</button>
-                  <button className="rounded-xl border px-4 py-2" onClick={()=>{
-                    const preset = unit==='cm'
-                      ? { chest:100, waist:84, hips:100, inseam:80, height:178 }
-                      : { chest:39.4, waist:33.1, hips:39.4, inseam:31.5, height:70.1 };
-                    setMeas(preset);
-                  }}>Use sample</button>
-                  <button className="rounded-xl border px-4 py-2" onClick={()=>{
-                    const resOut = {};
-                    const measCmNow = unit==='cm' ? meas : { chest: inToCm(meas.chest||0), waist: inToCm(meas.waist||0), hips: inToCm(meas.hips||0), inseam: inToCm(meas.inseam||0), height: inToCm(meas.height||0) };
-                    for(const b of brands){
-                      const chart = SIZE_CHARTS[b] && SIZE_CHARTS[b][category] && SIZE_CHARTS[b][category][gender];
-                      const chosen = pickByRules(chart, measCmNow, category, tolerance, strict);
-                      if(chosen) resOut[b]=chosen.row;
-                    }
-                    const blob = new Blob([JSON.stringify({ input:{ unit, category, gender, meas, tolerance, strict }, results: resOut }, null, 2)], { type:"application/json" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url; a.download = "size-me-results.json"; a.click();
-                    URL.revokeObjectURL(url);
-                  }}>Export results (JSON)</button>
-                </div>
+                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+                    <div>
+                      <label className="text-sm text-slate-600 dark:text-slate-300 mb-1 block">Tolerance (cm)</label>
+                      <input type="number" min="0" max="5" step="0.5" value={tolerance} onChange={(e)=>setTolerance(clamp(parseFloat(e.target.value)||0,0,5))} className="rounded-xl border px-3 py-2 w-28 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" />
+                    </div>
+                    <div>
+                      <label className="text-sm text-slate-600 dark:text-slate-300 mb-1 block">Fit preference</label>
+                      <select className="w-full rounded-xl border px-3 py-2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600" value={fit} onChange={(e)=>setFit(e.target.value)}>
+                        {["Slim","Regular","Relaxed"].map(f=><option key={f} value={f}>{f}</option>)}
+                      </select>
+                    </div>
+                    <label className="inline-flex items-center gap-2">
+                      <input type="checkbox" checked={strict} onChange={(e)=>setStrict(e.target.checked)} />
+                      <span className="text-sm text-slate-700 dark:text-slate-200">Strict match (never pick too small)</span>
+                    </label>
+                  </div>
 
-                <p className="mt-4 text-xs text-slate-500">Prototype only. Ranges are approximate and may vary by style/fabric. Use tolerance to reflect preferred fit.</p>
-              </section>
+                  <div className="mt-6">
+                    <label className="text-sm text-slate-600 dark:text-slate-300 mb-2 block">Brands</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {Object.keys(SIZE_CHARTS).map(b=>{
+                        const checked = brands.includes(b);
+                        return (
+                          <label key={b} className={"flex items-center gap-2 rounded-xl border px-3 py-2 cursor-pointer " + (checked ? "bg-slate-900 text-white border-slate-900" : "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600")}>
+                            <input className="hidden" type="checkbox" checked={checked} onChange={(e)=>{ setBrands(prev => e.target.checked ? Array.from(new Set(prev.concat([b]))) : prev.filter(x=>x!==b)); }} />
+                            <span className="text-sm font-medium">{b}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-              <section id="results" className="bg-white rounded-2xl shadow p-5">
-                <h2 className="text-lg font-semibold mb-4">Recommended sizes</h2>
-                <ResultsPanel unit={unit} results={results} category={category} />
-              </section>
-            </main>
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    <button className={"rounded-xl bg-slate-900 text-white px-4 py-2 shadow" + (btnPulse ? " pulse" : "")} onClick={() => { setCalcTick(t => t + 1); setShowToast(true); setBtnPulse(true); setTimeout(() => setShowToast(false), 1500); setTimeout(() => setBtnPulse(false), 500); document.getElementById('results')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>Calculate</button>
+                    <button className="rounded-xl border px-4 py-2" onClick={()=>{ const preset = unit==='cm' ? { chest:100, waist:84, hips:100, inseam:80, height:178 } : { chest:39.4, waist:33.1, hips:39.4, inseam:31.5, height:70.1 }; setMeas(preset); }}>Use sample</button>
+                    <button className="rounded-xl border px-4 py-2" onClick={()=>{ const resOut = {}; const measCmNow = unit==='cm' ? meas : { chest: inToCm(meas.chest||0), waist: inToCm(meas.waist||0), hips: inToCm(meas.hips||0), inseam: inToCm(meas.inseam||0), height: inToCm(meas.height||0) }; for(const b of brands){ const chart = SIZE_CHARTS[b] && SIZE_CHARTS[b][category] && SIZE_CHARTS[b][category][gender]; const chosen = pickByRules(chart, measCmNow, category, tolerance, strict, fit); if(chosen) resOut[b]=chosen.row; } const blob = new Blob([JSON.stringify({ input:{ unit, category, gender, meas, tolerance, strict, brands, fit }, results: resOut }, null, 2)], { type:"application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "size-me-results.json"; a.click(); URL.revokeObjectURL(url); }}>Export results (JSON)</button>
+                    <button className="rounded-xl border px-4 py-2" onClick={()=>{ const payload = { meas, unit, category, gender, tolerance, strict, brands, fit }; const url = new URL(location.href); url.searchParams.set("s", encodeState(payload)); navigator.clipboard.writeText(url.toString()); setShowToast(true); setTimeout(()=>setShowToast(false),1500); }}>Copy shareable link</button>
+                  </div>
 
-            {showToast && (<div className="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg">Calculated ✓</div>)}
+                  <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">Prototype only. Ranges are approximate and may vary by style/fabric. Use tolerance & fit preference to reflect how you like clothes to fit.</p>
+                </section>
+
+                <section id="results" className="bg-white dark:bg-slate-800 rounded-2xl shadow p-5">
+                  <h2 className="text-lg font-semibold mb-4">Recommended sizes</h2>
+                  <ResultsPanel unit={unit} results={results} category={category} />
+                </section>
+              </main>
+
+              {showToast && (<div className="fixed bottom-6 right-6 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg">Done ✓</div>)}
+            </div>
           </div>
         );
       }
@@ -375,22 +356,22 @@
             {entries.map(([brand, data])=>{
               const row = data.pick;
               let badge;
-              if (data.reason === 'strict_in_range') {
-                badge = <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-green-600 text-green-700">in range</span>;
-              } else if (data.reason === 'sized_up_to_fit') {
-                badge = <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-blue-600 text-blue-700">sized up to fit</span>;
-              } else {
-                badge = <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-rose-600 text-rose-700">over max</span>;
-              }
+              if (data.reason === 'strict_in_range')   badge = <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-green-600 text-green-700">in range</span>;
+              else if (data.reason === 'sized_up_to_fit') badge = <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-blue-600 text-blue-700">sized up</span>;
+              else if (data.reason === 'sized_up_by_fit') badge = <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-indigo-600 text-indigo-700">sized up (fit)</span>;
+              else                                        badge = <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-rose-600 text-rose-700">over max</span>;
 
               return (
-                <li key={brand} className="rounded-xl border p-4">
+                <li key={brand} className="rounded-xl border dark:border-slate-700 p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <div className="text-base font-medium">{brand}</div>
-                      <div className="text-sm text-slate-600">{category}</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-300">{category}</div>
                     </div>
-                    <div className="text-2xl font-semibold flex items-center">{row.label}{badge}</div>
+                    <div className="text-2xl font-semibold flex items-center">
+                      {row.label}{badge}
+                      {data.between && <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-slate-400 dark:border-slate-600 text-slate-600 dark:text-slate-300">between {row.label} / {data.between}</span>}
+                    </div>
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
@@ -398,8 +379,8 @@
                       if(!row[k]) return null;
                       const label = k[0].toUpperCase() + k.slice(1);
                       return (
-                        <div key={k} className="rounded-lg bg-slate-50 border p-2">
-                          <div className="text-slate-500">{label} range</div>
+                        <div key={k} className="rounded-lg bg-slate-50 dark:bg-slate-900 border dark:border-slate-700 p-2">
+                          <div className="text-slate-500 dark:text-slate-400">{label} range</div>
                           <div className="font-medium">{prettyRange(row[k], unit)}</div>
                         </div>
                       );
@@ -412,8 +393,7 @@
         );
       }
 
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      root.render(<App />);
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
   </body>
 </html>
