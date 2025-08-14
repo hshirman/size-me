@@ -332,10 +332,14 @@
       <ul className="space-y-3">
         {entries.map(([brand, data])=>{
           const row = data.pick;
-          const inRanges = keys.every(k => !row[k] || data.diag[k]===0);
-          const badge = inRanges
-            ? <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-green-600 text-green-700">strict in-range</span>
-            : <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-amber-600 text-amber-700">closest (out of range)</span>;
+let badge;
+if (data.reason === 'strict_in_range') {
+  badge = <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-green-600 text-green-700">in range</span>;
+} else if (data.reason === 'sized_up_to_fit') {
+  badge = <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-blue-600 text-blue-700">sized up to fit</span>;
+} else { // 'over_max'
+  badge = <span className="ml-2 text-xs rounded-md px-2 py-0.5 border border-rose-600 text-rose-700">over max</span>;
+}
 
           return (
             <li key={brand} className="rounded-xl border p-4">
