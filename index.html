@@ -102,15 +102,29 @@
     return used ? score/used : -Infinity;
   }
 
-  function pickBest(chart, measCm, category, padCm){
-    if(!Array.isArray(chart) || chart.length===0) return null;
-    let best=null, bestScore=-Infinity;
-    for(const row of chart){
-      const s = scoreSize(row, measCm, category, padCm);
-      if(s>bestScore){ best=row; bestScore=s; }
+  function pickByRules(chart, measCm, category, padCm, strict){
+  if(!Array.isArray(chart) || chart.length===0) return null;
+  const keys = category==='Tops' ? ['chest','waist','hips'] : ['waist','hips','inseam'];
+
+  // A) Strict in-range first (all relevant measurements inside range with tolerance)
+  if (strict) {
+    for (const row of chart) {
+      const ok = keys.every(k => !row[k] || distToRange(row[k], (measCm[k]||0), padCm) === 0);
+      if (ok) return { row, reason: 'strict_in_range' };
     }
-    return best;
   }
+
+  // B) Otherwise: pick the smallest size that is NOT TOO SMALL
+  //    (i.e., none of the measurements exceed that size's upper bound + tol)
+  for (const row of chart) {
+    const notTooSmall = keys.every(k => !row[k] || (measCm[k]==null ? true : (measCm[k] <= row[k][1] + padCm)));
+    if (notTooSmall) return { row, reason: 'sized_up_to_fit' };
+  }
+
+  // C) If all sizes are too small, choose the largest and mark as over max
+  return { row: chart[chart.length - 1], reason: 'over_max' };
+}
+
 
   function prettyRange([lo,hi], unit){
     const f = unit==='in' ? cmToIn : (x)=>x;
