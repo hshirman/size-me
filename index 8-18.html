@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Clothing Sizer & Brand Recommender</title>
+  <style>
+    :root { --bg:#0b0c10; --panel:#12141a; --text:#e8eef9; --muted:#9fb0cc; --accent:#6aa6ff; --accent-2:#63f5c3; --border:#1e2430; --good:#34d399; --warn:#fbbf24; --bad:#ef4444; }
+    [data-theme="light"] { --bg:#f6f7fb; --panel:#fff; --text:#0f172a; --muted:#475569; --accent:#2563eb; --accent-2:#059669; --border:#e5e7eb; --good:#059669; --warn:#b45309; --bad:#b91c1c; }
+    *{box-sizing:border-box}
+    html,body{height:auto;min-height:100vh;overflow-y:auto}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";background:var(--bg);color:var(--text)}
+    .container{max-width:1200px;margin:0 auto;padding:24px}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    h1{font-size:clamp(22px,3vw,32px);margin:0;letter-spacing:.3px}
+    .badge{padding:2px 8px;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;font-weight:600;font-size:12px}
+    .grid{display:grid;grid-template-columns:360px 1fr;gap:16px;align-items:start}
+    @media(max-width:960px){.grid{grid-template-columns:1fr}}
+    .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 6px 20px rgba(0,0,0,.15)}
+    .card h2{margin:0 0 10px;font-size:16px;letter-spacing:.2px;color:var(--muted);font-weight:700;text-transform:uppercase}
+    label{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:12px 0 6px}
+    input,select,button,textarea{width:100%;background:transparent;color:var(--text);border:1px solid var(--border);border-radius:12px;padding:10px 12px;outline:none;font-size:14px}
+    input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in lab,var(--accent) 25%, transparent)}
+    .row{display:flex;gap:10px}.row>*{flex:1}
+    .toolbar{display:flex;flex-wrap:wrap;gap:8px}
+    .toolbar button,.toolbar a.btn{flex:none;width:auto;cursor:pointer;background:var(--panel);color:var(--text);border:1px solid var(--border);padding:10px 12px;border-radius:12px;text-decoration:none}
+    .toolbar button.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));border-color:transparent;color:#fff;font-weight:700}
+    .switch{display:flex;align-items:center;gap:8px}
+    .pill{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:999px}
+    .results{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+    .brand{border:1px solid var(--border);background:color-mix(in lab,var(--panel) 92%, var(--accent) 8%);border-radius:16px;padding:12px}
+    .brand h3{margin:0 0 8px;font-size:16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .chip{font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--border);color:var(--muted)}
+    .score{font-weight:700}.score.good{color:var(--good)}.score.warn{color:var(--warn)}.score.bad{color:var(--bad)}
+    .brand-list{max-height:260px;overflow:auto;padding:8px;border:1px dashed var(--border);border-radius:12px}
+    .brand-item{display:flex;align-items:center;justify-content:space-between;padding:6px 4px;border-bottom:1px dashed var(--border)}
+    .brand-item:last-child{border-bottom:none}
+    .muted{color:var(--muted);font-size:12px}
+    .footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center}
+    @media print{body{background:#fff;color:#000}.no-print{display:none !important}.card{box-shadow:none;border-color:#ddd}}
+    /* Tabs */
+    .tabs{display:flex;gap:8px;margin-bottom:8px}
+    .tab{padding:8px 12px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--muted);cursor:pointer}
+    .tab.active{background:var(--panel);color:var(--text);border-color:var(--accent)}
+  </style>
+</head>
+<body>
+  <div class="container" id="app" data-theme="dark">
+    <header>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <h1>Clothing Sizer <span class="badge">Brand Recommender</span></h1>
+      </div>
+      <div class="switch no-print">
+        <input type="checkbox" id="themeToggle" />
+        <label for="themeToggle" style="margin:0">Dark mode</label>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left column: Inputs & Controls (Tabbed) -->
+      <div class="card">
+        <div class="tabs no-print" role="tablist">
+          <button class="tab active" id="tab-basic" aria-controls="panel-basic" aria-selected="true">Body Fit</button>
+          <button class="tab" id="tab-quick" aria-controls="panel-quick" aria-selected="false">Brand → Brand (fast)</button>
+          <button class="tab" id="tab-advanced" aria-controls="panel-advanced" aria-selected="false">Advanced</button>
+        </div>
+
+        <!-- BASIC PANEL -->
+        <section id="panel-basic" aria-labelledby="tab-basic">
+          <h2>Measurements</h2>
+          <div class="row">
+            <div>
+              <label for="gender">Fit Profile</label>
+              <select id="gender">
+                <option value="men">Men</option>
+                <option value="unisex">Unisex</option>
+                <option value="women">Women</option>
+              </select>
+            </div>
+            <div>
+              <label for="category">Category</label>
+              <select id="category">
+                <option value="tops">Tops</option>
+                <option value="bottoms">Bottoms</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="chest">Chest</label>
+              <input id="chest" type="number" min="0" step="0.1" placeholder="e.g., 40" />
+            </div>
+            <div>
+              <label for="waist">Waist</label>
+              <input id="waist" type="number" min="0" step="0.1" placeholder="e.g., 33" />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="hip">Hip</label>
+              <input id="hip" type="number" min="0" step="0.1" placeholder="e.g., 40" />
+            </div>
+            <div>
+              <label for="inseam">Inseam</label>
+              <input id="inseam" type="number" min="0" step="0.1" placeholder="e.g., 32" />
+            </div>
+          </div>
+
+          <div class="toolbar" style="margin-top: 12px;">
+            <button id="calc" class="primary">Calculate Recommendations</button>
+            <button id="reset">Reset</button>
+          </div>
+        </section>
+
+        <!-- QUICK MATCH PANEL (less accurate) -->
+        <section id="panel-quick" aria-labelledby="tab-quick" hidden>
+          <h2>Brand → Brand Quick Match <span class="chip">approximate</span></h2>
+          <p class="muted">Pick a brand and size you already wear; we’ll suggest similar sizes in other brands based on chart overlap. This is less precise than using body measurements.</p>
+          <div class="row">
+            <div>
+              <label for="qmGender">Fit Profile</label>
+              <select id="qmGender">
+                <option value="men">Men</option>
+                <option value="unisex">Unisex</option>
+                <option value="women">Women</option>
+              </select>
+            </div>
+            <div>
+              <label for="qmCategory">Category</label>
+              <select id="qmCategory">
+                <option value="tops">Tops</option>
+                <option value="bottoms">Bottoms</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="qmBrand">I wear this brand</label>
+              <select id="qmBrand"></select>
+            </div>
+            <div>
+              <label for="qmSize">…in this labeled size</label>
+              <select id="qmSize"></select>
+            </div>
+          </div>
+          <div class="toolbar" style="margin-top:12px;">
+            <button id="calcQuick" class="primary">Find Similar Sizes</button>
+          </div>
+        </section>
+
+        <!-- ADVANCED PANEL -->
+        <section id="panel-advanced" aria-labelledby="tab-advanced" hidden>
+          <h2>Advanced Search</h2>
+          <div class="row">
+            <div>
+              <label for="unit">Units</label>
+              <select id="unit">
+                <option value="in">Inches (in)</option>
+                <option value="cm">Centimeters (cm)</option>
+              </select>
+            </div>
+            <div>
+              <label for="fit">Fit Preference</label>
+              <select id="fit">
+                <option value="snug">Snug</option>
+                <option value="regular" selected>Regular</option>
+                <option value="relaxed">Relaxed</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="pill" style="width:100%">
+              <input id="strict" type="checkbox" />
+              <label for="strict" style="margin:0">Strict match (all measurements must fit size window)</label>
+            </div>
+          </div>
+
+          <div class="toolbar" style="margin:12px 0;">
+            <button id="save">Save</button>
+            <button id="share">Share Link</button>
+            <button id="exportCsv">Export CSV</button>
+            <button id="exportPdf">Export PDF</button>
+          </div>
+
+          <h2>Brands</h2>
+          <div class="row">
+            <div>
+              <label for="brandSearch">Search Brands</label>
+              <input id="brandSearch" placeholder="Type to filter…"/>
+            </div>
+            <div>
+              <label for="brandPreset">Quick Preset</label>
+              <select id="brandPreset">
+                <option value="all" selected>All Brands</option>
+                <option value="athletic">Athletic</option>
+                <option value="casual">Casual</option>
+                <option value="outdoor">Outdoor</option>
+                <option value="denim">Denim</option>
+              </select>
+            </div>
+          </div>
+          <div class="brand-list" id="brandList"></div>
+          <div class="muted" style="margin-top:8px">Use checkboxes to include/exclude brands. Your selection is saved locally.</div>
+        </section>
+      </div>
+
+      <!-- Right column: Results -->
+      <div class="card">
+        <h2>Results</h2>
+        <div id="summary" class="muted" style="margin-bottom: 10px;"></div>
+        <div class="results" id="results"></div>
+        <div id="unavailable" class="muted" style="margin-top:8px"></div>
+        <div class="footer">Between sizes? We factor in your fit preference and show the nearest size. Strict mode requires all inputs to fall within the brand's window.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Utilities ----------------------------------------------------------
+    const $ = sel => document.querySelector(sel);
+    const round = (n,d=1)=> Math.round(n*(10**d))/(10**d);
+    function toInches(value, unit){ if (value==="" || value==null) return undefined; value=Number(value); return unit==='cm'? value/2.54 : value; }
+    function fromInches(value, unit){ if (value==null) return ''; return unit==='cm'? round(value*2.54,1): round(value,1); }
+    function easeAdjustment(fit){ if (fit==='snug') return -0.5; if (fit==='relaxed') return +0.5; return 0; }
+    function within([min,max], v){ return (min==null || v>=min) && (max==null || v<=max); }
+    function distScore(needles, window){ let score=0, fields=0; for(const k of Object.keys(needles)){ const v=needles[k]; if (v==null) continue; const w=window[k]; if(!w) continue; fields++; const [min,max]=w; if(v<min) score+= (min-v); else if(v>max) score+=(v-max); } return fields? score/fields : Infinity; }
+    function mid(range){ return (range && range.length===2) ? (range[0]+range[1])/2 : undefined; }
+    function labelForSize(sizeKey){ return String(sizeKey); }
+    function scoreClass(score){ if (score == null || !isFinite(score)) return 'bad'; if (score <= 0.2) return 'good'; if (score <= 0.7) return 'warn'; return 'bad'; }
+
+    // --- Starter Size Charts (explicit unisex availability) -----------------
+    const STARTER_BRANDS = [
+      // Athletic
+      { id:'nike', name:'Nike', tags:['athletic'], sizes:{
+          men:{ tops:{ XS:{chest:[32,35]}, S:{chest:[35,37.5]}, M:{chest:[37.5,41]}, L:{chest:[41,44]}, XL:{chest:[44,48]} },
+                bottoms:{ XS:{waist:[26,29],hip:[33,35]}, S:{waist:[29,32],hip:[35,37.5]}, M:{waist:[32,35],hip:[37.5,41]}, L:{waist:[35,38],hip:[41,44]}, XL:{waist:[38,43],hip:[44,47]} } },
+          women:{ tops:{ XS:{bust:[29,33]}, S:{bust:[33,37]}, M:{bust:[37,41]}, L:{bust:[41,45]}, XL:{bust:[45,49]} },
+                  bottoms:{ XS:{waist:[23,26],hip:[33,36]}, S:{waist:[26,29],hip:[36,39]}, M:{waist:[29,32],hip:[39,42]}, L:{waist:[32,36],hip:[42,45]}, XL:{waist:[36,40],hip:[45,48]} } },
+          unisex:{ tops:{ XS:{chest:[32,35]}, S:{chest:[35,38]}, M:{chest:[38,41]}, L:{chest:[41,44]}, XL:{chest:[44,48]} },
+                   bottoms:{ XS:{waist:[26,29],hip:[33,36]}, S:{waist:[29,32],hip:[36,39]}, M:{waist:[32,35],hip:[39,42]}, L:{waist:[35,38],hip:[42,45]}, XL:{waist:[38,41],hip:[45,48]} } } }},
+      { id:'adidas', name:'Adidas', tags:['athletic'], sizes:{
+          men:{ tops:{ S:{chest:[35,37]}, M:{chest:[38,40]}, L:{chest:[41,43]}, XL:{chest:[44,46]} },
+                bottoms:{ S:{waist:[29,31],hip:[35,37]}, M:{waist:[32,34],hip:[38,40]}, L:{waist:[35,37],hip:[41,43]}, XL:{waist:[38,40],hip:[44,46]} } },
+          women:{ tops:{ XS:{bust:[30,32]}, S:{bust:[33,35]}, M:{bust:[36,38]}, L:{bust:[39,41]} },
+                  bottoms:{ XS:{waist:[24,26],hip:[34,36]}, S:{waist:[27,29],hip:[37,39]}, M:{waist:[30,32],hip:[40,42]}, L:{waist:[33,35],hip:[43,45]} } } }},
+      { id:'underarmour', name:'Under Armour', tags:['athletic'], sizes:{
+          men:{ tops:{ S:{chest:[34,36]}, M:{chest:[38,40]}, L:{chest:[42,44]}, XL:{chest:[46,48]} },
+                bottoms:{ S:{waist:[28,29]}, M:{waist:[30,32]}, L:{waist:[34,36]}, XL:{waist:[38,40]} } },
+          women:{ tops:{ XS:{bust:[31,33]}, S:{bust:[33,35]}, M:{bust:[35,37]}, L:{bust:[37,39]} },
+                  bottoms:{ XS:{waist:[25,26],hip:[34,36]}, S:{waist:[27,28],hip:[36,38]}, M:{waist:[29,31],hip:[38,40]}, L:{waist:[32,34],hip:[40,42]} } } }},
+      // Casual / Denim
+      { id:'uniqlo', name:'Uniqlo', tags:['casual'], sizes:{
+          men:{ tops:{ S:{chest:[34,36]}, M:{chest:[36,39]}, L:{chest:[39,42]}, XL:{chest:[42,45]} },
+                bottoms:{ S:{waist:[28,30],hip:[35,37]}, M:{waist:[31,33],hip:[38,40]}, L:{waist:[34,36],hip:[41,43]}, XL:{waist:[37,39],hip:[44,46]} } },
+          women:{ tops:{ XS:{bust:[30,32]}, S:{bust:[32,34]}, M:{bust:[34,36]}, L:{bust:[36,38]}, XL:{bust:[38,40]} },
+                  bottoms:{ XS:{waist:[24,26],hip:[34,36]}, S:{waist:[26,28],hip:[36,38]}, M:{waist:[28,30],hip:[38,40]}, L:{waist:[30,32],hip:[40,42]} } },
+          unisex:{ tops:{ S:{chest:[34,36]}, M:{chest:[37,39]}, L:{chest:[40,42]} },
+                   bottoms:{ S:{waist:[28,30]}, M:{waist:[31,33]}, L:{waist:[34,36]} } } }},
+      { id:'hm', name:'H&M', tags:['casual'], sizes:{
+          men:{ tops:{ S:{chest:[35,37]}, M:{chest:[38,40]}, L:{chest:[41,43]}, XL:{chest:[44,46]} },
+                bottoms:{ S:{waist:[29,31],hip:[36,38]}, M:{waist:[32,34],hip:[39,41]}, L:{waist:[35,37],hip:[42,44]}, XL:{waist:[38,40],hip:[45,47]} } },
+          women:{ tops:{ XS:{bust:[30,32]}, S:{bust:[33,35]}, M:{bust:[36,38]}, L:{bust:[39,41]} },
+                  bottoms:{ XS:{waist:[24,26],hip:[34,36]}, S:{waist:[27,29],hip:[37,39]}, M:{waist:[30,32],hip:[40,42]}, L:{waist:[33,35],hip:[43,45]} } } }},
+      { id:'zara', name:'Zara', tags:['casual'], sizes:{
+          men:{ tops:{ S:{chest:[35,37]}, M:{chest:[38,40]}, L:{chest:[41,43]} },
+                bottoms:{ 38:{waist:[30,31]}, 40:{waist:[31,33]}, 42:{waist:[33,35]}, 44:{waist:[35,37]} } },
+          women:{ tops:{ XS:{bust:[30,32]}, S:{bust:[33,35]}, M:{bust:[36,38]}, L:{bust:[39,41]} },
+                  bottoms:{ XS:{waist:[24,26]}, S:{waist:[26,28]}, M:{waist:[28,30]}, L:{waist:[30,32]} } } }},
+      { id:'levis', name:"Levi's", tags:['denim'], sizes:{
+          men:{ tops:{ S:{chest:[35,37]}, M:{chest:[38,40]}, L:{chest:[41,43]} },
+                bottoms:{ '30':{waist:[29,30],hip:[37,38],inseam:[30,32]}, '32':{waist:[31,32],hip:[39,40],inseam:[30,34]}, '34':{waist:[33,34],hip:[41,42],inseam:[30,34]}, '36':{waist:[35,36],hip:[43,44],inseam:[30,36]} } },
+          women:{ bottoms:{ '26':{waist:[25,26],hip:[35,36]}, '27':{waist:[26,27],hip:[36,37]}, '28':{waist:[27,28],hip:[37,38]}, '29':{waist:[28,29],hip:[38,39]}, '30':{waist:[29,30],hip:[39,40]} } } }},
+      { id:'gap', name:'Gap', tags:['casual'], sizes:{
+          men:{ tops:{ S:{chest:[35,37]}, M:{chest:[38,40]}, L:{chest:[41,43]} },
+                bottoms:{ '30':{waist:[29,30]}, '32':{waist:[31,32]}, '34':{waist:[33,34]}, '36':{waist:[35,36]} } },
+          women:{ tops:{ XS:{bust:[31,32]}, S:{bust:[33,34]}, M:{bust:[35,36]}, L:{bust:[37,39]} },
+                  bottoms:{ '26':{waist:[25,26]}, '27':{waist:[26,27]}, '28':{waist:[27,28]}, '29':{waist:[28,29]} } } }},
+      { id:'asos', name:'ASOS', tags:['casual'], sizes:{
+          men:{ tops:{ XS:{chest:[34,36]}, S:{chest:[36,38]}, M:{chest:[38,40]}, L:{chest:[40,42]} },
+                bottoms:{ XS:{waist:[28,30]}, S:{waist:[30,32]}, M:{waist:[32,34]}, L:{waist:[34,36]} } },
+          women:{ tops:{ XS:{bust:[31,33]}, S:{bust:[33,35]}, M:{bust:[35,37]}, L:{bust:[37,39]} },
+                  bottoms:{ XS:{waist:[24,26],hip:[34,36]}, S:{waist:[26,28],hip:[36,38]}, M:{waist:[28,30],hip:[38,40]}, L:{waist:[30,32],hip:[40,42]} } },
+          unisex:{ tops:{ XS:{chest:[34,36]}, S:{chest:[36,38]}, M:{chest:[38,40]}, L:{chest:[40,42]} } } }},
+      { id:'everlane', name:'Everlane', tags:['casual'], sizes:{
+          men:{ tops:{ XS:{chest:[34,36]}, S:{chest:[36,38]}, M:{chest:[38,40]}, L:{chest:[41,43]} },
+                bottoms:{ 28:{waist:[27,28]}, 30:{waist:[29,30]}, 32:{waist:[31,32]}, 34:{waist:[33,34]} } },
+          women:{ tops:{ XS:{bust:[31,33]}, S:{bust:[33,35]}, M:{bust:[35,37]}, L:{bust:[37,39]} },
+                  bottoms:{ 24:{waist:[24,25]}, 25:{waist:[25,26]}, 26:{waist:[26,27]}, 27:{waist:[27,28]} } } }},
+      { id:'jcrew', name:'J.Crew', tags:['casual'], sizes:{
+          men:{ tops:{ XS:{chest:[34,36]}, S:{chest:[36,38]}, M:{chest:[38,40]}, L:{chest:[41,43]} },
+                bottoms:{ 30:{waist:[29,30]}, 32:{waist:[31,32]}, 34:{waist:[33,34]} } },
+          women:{ tops:{ XS:{bust:[31,33]}, S:{bust:[33,35]}, M:{bust:[35,37]}, L:{bust:[37,39]} } } }},
+      // Outdoor
+      { id:'patagonia', name:'Patagonia', tags:['outdoor'], sizes:{
+          men:{ tops:{ S:{chest:[35,37]}, M:{chest:[38,40]}, L:{chest:[42,44]} }, bottoms:{ S:{waist:[28,30]}, M:{waist:[31,33]}, L:{waist:[34,36]} } },
+          women:{ tops:{ XS:{bust:[32,33]}, S:{bust:[34,35]}, M:{bust:[36,37]}, L:{bust:[38,40]} }, bottoms:{ XS:{waist:[24,26]}, S:{waist:[27,28]}, M:{waist:[29,30]}, L:{waist:[31,33]} } },
+          unisex:{ tops:{ S:{chest:[35,37]}, M:{chest:[38,40]}, L:{chest:[42,44]} }, bottoms:{ S:{waist:[28,30]}, M:{waist:[31,33]}, L:{waist:[34,36]} } } }},
+      { id:'thenorthface', name:'The North Face', tags:['outdoor'], sizes:{
+          men:{ tops:{ S:{chest:[36,38]}, M:{chest:[39,41]}, L:{chest:[42,44]} }, bottoms:{ S:{waist:[28,30]}, M:{waist:[31,33]}, L:{waist:[34,36]} } },
+          women:{ tops:{ XS:{bust:[31,33]}, S:{bust:[33,35]}, M:{bust:[36,38]}, L:{bust:[39,41]} }, bottoms:{ XS:{waist:[24,26]}, S:{waist:[26,28]}, M:{waist:[28,30]}, L:{waist:[30,32]} } } }},
+      { id:'columbia', name:'Columbia', tags:['outdoor'], sizes:{
+          men:{ tops:{ S:{chest:[35,38]}, M:{chest:[38,41]}, L:{chest:[42,45]} }, bottoms:{ S:{waist:[28,30]}, M:{waist:[32,34]}, L:{waist:[36,38]} } },
+          women:{ tops:{ XS:{bust:[32,33]}, S:{bust:[34,35]}, M:{bust:[36,37]}, L:{bust:[38,40]} } } }},
+      { id:'arcteryx', name:"Arc'teryx", tags:['outdoor'], sizes:{
+          men:{ tops:{ S:{chest:[36,38]}, M:{chest:[39,41]}, L:{chest:[42,45]} }, bottoms:{ S:{waist:[29,31]}, M:{waist:[32,34]}, L:{waist:[35,37]} } },
+          women:{ tops:{ XS:{bust:[31,33]}, S:{bust:[33,35]}, M:{bust:[36,38]}, L:{bust:[39,41]} } } }},
+      { id:'or', name:'Outdoor Research', tags:['outdoor'], sizes:{
+          men:{ tops:{ S:{chest:[35,37]}, M:{chest:[38,40]}, L:{chest:[41,43]} } },
+          women:{ tops:{ XS:{bust:[31,33]}, S:{bust:[33,35]}, M:{bust:[35,37]} } } }},
+      // Workwear
+      { id:'carhartt', name:'Carhartt', tags:['casual'], sizes:{
+          men:{ tops:{ S:{chest:[34,36]}, M:{chest:[38,40]}, L:{chest:[42,44]} }, bottoms:{ 30:{waist:[29,30]}, 32:{waist:[31,32]}, 34:{waist:[33,34]} } },
+          women:{ tops:{ XS:{bust:[31,33]}, S:{bust:[33,35]}, M:{bust:[35,37]}, L:{bust:[37,39]} } } }},
+      // Athleisure
+      { id:'lululemon', name:'Lululemon', tags:['athletic'], sizes:{
+          men:{ tops:{ S:{chest:[35,37]}, M:{chest:[38,40]}, L:{chest:[41,43]} }, bottoms:{ S:{waist:[29,31]}, M:{waist:[32,34]}, L:{waist:[35,37]} } },
+          women:{ tops:{ 4:{bust:[31,33]}, 6:{bust:[33,35]}, 8:{bust:[35,37]}, 10:{bust:[37,39]} }, bottoms:{ 4:{waist:[24,26],hip:[34,36]}, 6:{waist:[26,28],hip:[36,38]}, 8:{waist:[28,30],hip:[38,40]}, 10:{waist:[30,32],hip:[40,42]} } } }},
+    ];
+
+    // --- State & Persistence -----------------------------------------------
+    const els = {
+      unit: $('#unit'), gender: $('#gender'), chest: $('#chest'), waist: $('#waist'), hip: $('#hip'), inseam: $('#inseam'),
+      category: $('#category'), fit: $('#fit'), strict: $('#strict'),
+      calc: $('#calc'), reset: $('#reset'), save: $('#save'), share: $('#share'), exportCsv: $('#exportCsv'), exportPdf: $('#exportPdf'),
+      brandList: $('#brandList'), brandSearch: $('#brandSearch'), brandPreset: $('#brandPreset'),
+      results: $('#results'), summary: $('#summary'), unavailable: $('#unavailable'), themeToggle: $('#themeToggle'), app: document.getElementById('app'),
+      // Quick match els
+      qmGender: $('#qmGender'), qmCategory: $('#qmCategory'), qmBrand: $('#qmBrand'), qmSize: $('#qmSize'), calcQuick: document.getElementById('calcQuick')
+    };
+
+    const STORAGE_KEY = 'clothingSizerV2';
+    const State = { brands: STARTER_BRANDS, enabled: new Set(STARTER_BRANDS.map(b=>b.id)), theme: 'dark' };
+
+    function saveLocal(){
+      const obj={ unit:els.unit?.value, gender:els.gender?.value, category:els.category?.value, fit:els.fit?.value, strict:els.strict?.checked, chest:els.chest?.value, waist:els.waist?.value, hip:els.hip?.value, inseam:els.inseam?.value, enabled:[...State.enabled], theme:State.theme };
+      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(obj)); }catch(e){}
+      return obj;
+    }
+    function loadLocal(){
+      const raw=localStorage.getItem(STORAGE_KEY); if(!raw) return;
+      try{ const s=JSON.parse(raw);
+        for(const k of ['unit','gender','category','fit']) if(els[k]) els[k].value = s[k] ?? els[k].value;
+        if(els.strict) els.strict.checked=!!s.strict;
+        for(const k of ['chest','waist','hip','inseam']) if(els[k]) els[k].value = s[k] ?? '';
+        State.enabled=new Set(s.enabled || STARTER_BRANDS.map(b=>b.id));
+        State.theme = s.theme||'dark';
+      }catch(e){ console.warn('loadLocal err',e); }
+    }
+    function applyTheme(){ els.app.setAttribute('data-theme', State.theme); if(els.themeToggle) els.themeToggle.checked = State.theme !== 'light'; }
+
+    function updateSummary(){
+      const unit=els.unit?.value||'in';
+      const bodyIn={ chest:toInches(els.chest?.value,unit), bust:toInches(els.chest?.value,unit), waist:toInches(els.waist?.value,unit), hip:toInches(els.hip?.value,unit), inseam:toInches(els.inseam?.value,unit) };
+      const shown=[ bodyIn.chest?`Chest ${fromInches(bodyIn.chest,unit)}`:null, bodyIn.waist?`Waist ${fromInches(bodyIn.waist,unit)}`:null, bodyIn.hip?`Hip ${fromInches(bodyIn.hip,unit)}`:null, bodyIn.inseam?`Inseam ${fromInches(bodyIn.inseam,unit)}`:null ].filter(Boolean).join(' · ');
+      if(els.summary) els.summary.textContent = shown ? `Using ${unit.toUpperCase()} · ${shown} · ${els.gender?.value} · ${els.category?.value} · ${els.fit?.value}${els.strict?.checked?' · strict':''}` : 'Enter measurements then click Calculate.';
+    }
+
+    // --- Brand UI -----------------------------------------------------------
+    function renderBrandList(){
+      if(!els.brandList) return;
+      const query = els.brandSearch?.value?.trim().toLowerCase()||'';
+      const preset = els.brandPreset?.value||'all';
+      const frag = document.createDocumentFragment();
+      const list = State.brands.filter(b=>{
+        const matchesQuery = !query || b.name.toLowerCase().includes(query) || b.id.includes(query);
+        const matchesPreset = preset==='all' || b.tags.includes(preset);
+        return matchesQuery && matchesPreset;
+      });
+      list.forEach(b=>{
+        const row = document.createElement('div');
+        row.className = 'brand-item';
+        const left = document.createElement('div');
+        left.style.display='flex'; left.style.alignItems='center'; left.style.gap='8px';
+        const chk = document.createElement('input'); chk.type='checkbox'; chk.checked = State.enabled.has(b.id);
+        chk.addEventListener('change',()=>{ if(chk.checked) State.enabled.add(b.id); else State.enabled.delete(b.id); saveLocal(); });
+        const label = document.createElement('span'); label.textContent = b.name;
+        const tag = document.createElement('span'); tag.className='chip'; tag.textContent=b.tags.join(', ');
+        left.append(chk,label,tag);
+        row.append(left);
+        frag.append(row);
+      });
+      els.brandList.innerHTML='';
+      els.brandList.append(frag);
+    }
+
+    // Helpers for Quick Match dropdowns
+    function buildBrandOptions(selectEl, gender, category){
+      if(!selectEl) return; selectEl.innerHTML='';
+      const brands = State.brands.filter(b=> b.sizes?.[gender]?.[category] && State.enabled.has(b.id));
+      brands.forEach(b=>{ const opt=document.createElement('option'); opt.value=b.id; opt.textContent=b.name; selectEl.appendChild(opt); });
+    }
+    function getSizeOptionsForBrand(brandId, gender, category){
+      const b = State.brands.find(x=>x.id===brandId); if(!b) return [];
+      const table = b.sizes?.[gender]?.[category]; if(!table) return [];
+      return Object.keys(table);
+    }
+
+    // --- Core sizing by body -----------------------------------------------
+    function pickSizeForBrand(brand, opts){
+      const {gender, category, body, fit, strict} = opts;
+      const tables = brand.sizes?.[gender]?.[category];
+      if (!tables) return null;
+      const adjusted = {...body};
+      const adj = easeAdjustment(fit);
+      ['chest','bust','waist','hip'].forEach(k=>{ if(adjusted[k]!=null) adjusted[k]+=adj; });
+      let best = null;
+      for(const [sizeKey, window] of Object.entries(tables)){
+        if (strict){
+          let ok = true;
+          for(const [k, range] of Object.entries(window)){
+            const v = adjusted[k];
+            if (v == null) continue;
+            if (!within(range, v)) { ok = false; break; }
+          }
+          if (ok){
+            const score = distScore(adjusted, window);
+            if (!best || score < best.score) best = {size:sizeKey, score, window};
+          }
+        } else {
+          const score = distScore(adjusted, window);
+          if (!isFinite(score)) continue;
+          if (!best || score < best.score) best = {size:sizeKey, score, window};
+        }
+      }
+      return best; // null if no match
+    }
+
+    function calcRecommendations(){
+      const unit = els.unit?.value||'in';
+      const body = { chest: toInches(els.chest?.value, unit), bust: toInches(els.chest?.value, unit), waist: toInches(els.waist?.value, unit), hip: toInches(els.hip?.value, unit), inseam: toInches(els.inseam?.value, unit) };
+      const anyInput = Object.values(body).some(v=>v!=null && !Number.isNaN(v));
+      if (!anyInput) { alert('Please enter at least one measurement.'); return; }
+      const gender = els.gender.value; const category = els.category.value; const fit = els.fit?.value||'regular'; const strict = !!els.strict?.checked;
+      const picks = []; const unavailable = [];
+      for(const b of State.brands){
+        if (!State.enabled.has(b.id)) continue;
+        const best = pickSizeForBrand(b, {gender, category, body, fit, strict});
+        if (best) picks.push({ brand:b, best, score: best.score });
+        else unavailable.push(b.name);
+      }
+      picks.sort((a,b)=>a.score-b.score);
+      renderResults(picks, {unit, unavailable});
+      updateSummary();
+      return picks;
+    }
+
+    function renderResults(picks, {unit, unavailable}){
+      const frag = document.createDocumentFragment();
+      if (!picks || picks.length===0){
+        const empty = document.createElement('div');
+        empty.className='muted'; empty.textContent='No brands matched with current filters/strictness.';
+        els.results.innerHTML=''; els.results.append(empty);
+      } else {
+        picks.forEach(({brand, best})=>{
+          const card = document.createElement('div');
+          card.className='brand';
+          const h = document.createElement('h3');
+          const left = document.createElement('div'); left.style.display='flex'; left.style.alignItems='center'; left.style.gap='8px';
+          const logo = document.createElement('div'); logo.textContent = '🏷️';
+          const name = document.createElement('strong'); name.textContent = brand.name;
+          left.append(logo,name);
+          const badge = document.createElement('span'); badge.className = `chip score ${scoreClass(best.score)}`; badge.textContent = best.score===0 ? 'Perfect' : `Score ${round(best.score,2)}`;
+          h.append(left,badge);
+
+          const size = document.createElement('div');
+          size.innerHTML = `<div class="row" style="margin:8px 0 6px;">
+            <div class="pill">Recommended size: <strong>${labelForSize(best.size)}</strong></div>
+            <div class="pill">Window: ${Object.entries(best.window).map(([k,v])=>`${k} ${fromInches(v[0],unit)}–${fromInches(v[1],unit)}`).join(' · ')}</div>
+          </div>`;
+
+          const meta = document.createElement('div'); meta.className='muted';
+          meta.textContent = 'Closest fit based on your inputs & preference.';
+
+          card.append(h,size,meta);
+          frag.append(card);
+        });
+        els.results.innerHTML='';
+        els.results.append(frag);
+      }
+
+      if (unavailable && unavailable.length){
+        els.unavailable.textContent = `Not available in ${els.gender.value} for selected category: ${unavailable.join(', ')}`;
+      } else {
+        els.unavailable.textContent = '';
+      }
+    }
+
+    // --- Quick Match (brand->brand) ----------------------------------------
+    function calcQuickMatch(){
+      const gender = els.qmGender.value; const category = els.qmCategory.value; const brandId = els.qmBrand.value; const sizeKey = els.qmSize.value;
+      const srcBrand = State.brands.find(b=>b.id===brandId); if(!srcBrand){ alert('Pick a brand.'); return; }
+      const srcTable = srcBrand.sizes?.[gender]?.[category]; if(!srcTable){ alert('That brand has no chart for this profile.'); return; }
+      const window = srcTable[sizeKey]; if(!window){ alert('Pick a size.'); return; }
+      const body = { chest: mid(window.chest||[]), bust: mid(window.bust||[]), waist: mid(window.waist||[]), hip: mid(window.hip||[]), inseam: mid(window.inseam||[]) };
+      const fit = 'regular', strict = false, unit = 'in';
+      const picks = [];
+      for(const b of State.brands){
+        if(b.id===brandId) continue;
+        if (!State.enabled.has(b.id)) continue;
+        const best = pickSizeForBrand(b, {gender, category, body, fit, strict});
+        if(best) picks.push({brand:b, best, score:best.score});
+      }
+      picks.sort((a,b)=>a.score-b.score);
+      renderQuickResults(srcBrand.name, sizeKey, window, picks, {unit});
+    }
+
+    function renderQuickResults(srcName, srcSize, srcWindow, picks, {unit}){
+      const frag = document.createDocumentFragment();
+      const intro = document.createElement('div'); intro.className='muted'; intro.style.marginBottom='8px';
+      intro.textContent = `Based on ${srcName} size ${srcSize} (${Object.entries(srcWindow).map(([k,v])=>`${k} ${fromInches(v[0],unit)}–${fromInches(v[1],unit)}`).join(' · ')}), here are approximate matches:`;
+      frag.append(intro);
+
+      if(!picks.length){ const empty=document.createElement('div'); empty.className='muted'; empty.textContent='No close matches found in enabled brands.'; frag.append(empty); }
+      picks.forEach(({brand,best})=>{
+        const card=document.createElement('div'); card.className='brand';
+        const h=document.createElement('h3'); h.innerHTML = `<div style="display:flex;align-items:center;gap:8px"><div>🏷️</div><strong>${brand.name}</strong></div><span class="chip score ${scoreClass(best.score)}">Score ${round(best.score,2)}</span>`;
+        const size=document.createElement('div'); size.innerHTML = `<div class="row" style="margin:8px 0 6px;">
+          <div class="pill">Suggested size: <strong>${labelForSize(best.size)}</strong></div>
+          <div class="pill">Window: ${Object.entries(best.window).map(([k,v])=>`${k} ${fromInches(v[0],unit)}–${fromInches(v[1],unit)}`).join(' · ')}</div>
+        </div>`;
+        const meta=document.createElement('div'); meta.className='muted'; meta.textContent='Approximate match using chart midpoints (less precise).';
+        card.append(h,size,meta); frag.append(card);
+      });
+      els.results.innerHTML=''; els.results.append(frag);
+      els.unavailable.textContent='';
+      updateSummary();
+    }
+
+    // --- CSV & PDF ----------------------------------------------------------
+    function exportCsv(picks){
+      if (!picks || picks.length===0){ alert('Nothing to export.'); return; }
+      const unit = els.unit?.value||'in';
+      const header = ['Brand','Size','Score','Window'];
+      const rows = picks.map(({brand,best})=>[ brand.name, labelForSize(best.size), round(best.score,2), Object.entries(best.window).map(([k,v])=>`${k} ${fromInches(v[0],unit)}-${fromInches(v[1],unit)}`).join(' | ') ]);
+      const csv = [header, ...rows].map(r=>r.map(x=>`"${String(x).replaceAll('"','""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'recommendations.csv'; a.click();
+      URL.revokeObjectURL(url);
+    }
+    function exportPdf(){ window.print(); }
+
+    // --- Shareable Links ----------------------------------------------------
+    function shareLink(){ const params = new URLSearchParams(saveLocal()); const url = location.origin + location.pathname + '?' + params.toString(); navigator.clipboard.writeText(url).then(()=>alert('Link copied to clipboard!'), ()=>prompt('Copy this link:', url)); }
+
+    // --- Tabs ---------------------------------------------------------------
+    (function(){
+      const tabs = [
+        {btn:'tab-basic', panel:'panel-basic'},
+        {btn:'tab-quick', panel:'panel-quick'},
+        {btn:'tab-advanced', panel:'panel-advanced'},
+      ];
+      function activate(id){
+        tabs.forEach(t=>{
+          const btn = document.getElementById(t.btn);
+          const panel = document.getElementById(t.panel);
+          const on = t.btn===id;
+          btn?.classList.toggle('active', on);
+          btn?.setAttribute('aria-selected', String(on));
+          if(panel) panel.hidden = !on;
+        });
+      }
+      tabs.forEach(t=> document.getElementById(t.btn)?.addEventListener('click', ()=>activate(t.btn)) );
+    })();
+
+    // --- Init ---------------------------------------------------------------
+    function init(){
+      const themeToggle = document.getElementById('themeToggle');
+      themeToggle?.addEventListener('change', ()=>{ State.theme = themeToggle.checked ? 'dark' : 'light'; applyTheme(); saveLocal(); });
+
+      loadLocal(); applyTheme(); renderBrandList(); updateSummary();
+
+      // basic events
+      ['unit','gender','category','fit','strict','chest','waist','hip','inseam'].forEach(id=>{
+        const el=document.getElementById(id); if(!el) return;
+        el.addEventListener('input', ()=>{ saveLocal(); updateSummary(); });
+        el.addEventListener('change', ()=>{ saveLocal(); updateSummary(); });
+      });
+      document.getElementById('calc')?.addEventListener('click', ()=>{ const picks = calcRecommendations(); window.__lastPicks = picks; });
+      document.getElementById('reset')?.addEventListener('click', ()=>{
+        if(els.chest) els.chest.value = ''; if(els.waist) els.waist.value = ''; if(els.hip) els.hip.value = ''; if(els.inseam) els.inseam.value = '';
+        if(document.getElementById('fit')) document.getElementById('fit').value='regular'; if(document.getElementById('strict')) document.getElementById('strict').checked=false;
+        if(document.getElementById('unit')) document.getElementById('unit').value='in'; if(document.getElementById('gender')) document.getElementById('gender').value='men'; if(document.getElementById('category')) document.getElementById('category').value='tops';
+        State.enabled = new Set(State.brands.map(b=>b.id)); saveLocal(); renderBrandList(); updateSummary(); if(els.results) els.results.innerHTML=''; if(els.unavailable) els.unavailable.textContent='';
+      });
+      document.getElementById('save')?.addEventListener('click', ()=>{ saveLocal(); alert('Saved to this browser.'); });
+      document.getElementById('share')?.addEventListener('click', shareLink);
+      document.getElementById('exportCsv')?.addEventListener('click', ()=> exportCsv(window.__lastPicks));
+      document.getElementById('exportPdf')?.addEventListener('click', exportPdf);
+
+      // quick match dropdowns
+      function refreshQuick(){
+        buildBrandOptions(els.qmBrand, els.qmGender.value, els.qmCategory.value);
+        const firstBrand = els.qmBrand.value;
+        const sizes = getSizeOptionsForBrand(firstBrand, els.qmGender.value, els.qmCategory.value);
+        els.qmSize.innerHTML='';
+        sizes.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; els.qmSize.appendChild(o); });
+      }
+      els.qmGender?.addEventListener('change', refreshQuick);
+      els.qmCategory?.addEventListener('change', refreshQuick);
+      els.qmBrand?.addEventListener('change', ()=>{
+        const sizes = getSizeOptionsForBrand(els.qmBrand.value, els.qmGender.value, els.qmCategory.value);
+        els.qmSize.innerHTML=''; sizes.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=s; els.qmSize.appendChild(o); });
+      });
+      document.getElementById('calcQuick')?.addEventListener('click', calcQuickMatch);
+
+      // initial populate
+      refreshQuick();
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
